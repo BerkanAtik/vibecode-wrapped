@@ -1,21 +1,30 @@
 # vibecode-wrapped
 
+[![npm version](https://img.shields.io/npm/v/vibecode-wrapped)](https://www.npmjs.com/package/vibecode-wrapped)
+[![npm downloads](https://img.shields.io/npm/dm/vibecode-wrapped)](https://www.npmjs.com/package/vibecode-wrapped)
+[![license](https://img.shields.io/npm/l/vibecode-wrapped)](LICENSE)
+
 **English** · [Türkçe](README.tr.md)
 
 Your year with AI coding agents, wrapped. One command reads the Claude Code and Codex logs already on your computer and turns them into a set of cards and a shareable image.
+
+<p align="center">
+  <img src="docs/demo.gif" width="360" alt="The cards playing one after another: hours, streak, tokens, persona and the shareable image">
+</p>
+
+## Run it
+
+Nothing to install or sign up for.
+
+1. Make sure you have [Node.js](https://nodejs.org) 18 or newer. Type `node -v` in a terminal to check.
+2. Open a terminal: Terminal on macOS and Linux, PowerShell on Windows.
+3. Paste this and press Enter:
 
 ```bash
 npx vibecode-wrapped
 ```
 
-<p>
-  <img src="docs/card-hours.png" width="24%" alt="Card: hours spent coding with agents">
-  <img src="docs/card-rhythm.png" width="24%" alt="Card: the hour of day you code most">
-  <img src="docs/card-prompts.png" width="24%" alt="Card: prompts sent and top tools">
-  <img src="docs/card-persona.png" width="24%" alt="Card: your coding persona">
-</p>
-
-The screenshots use sample data. Run `npx vibecode-wrapped --demo` to see the same cards without any logs.
+Your cards open in the browser. No Claude Code or Codex logs yet? Run `npx vibecode-wrapped --demo` to see them with sample data, like the GIF above.
 
 ## What you get
 

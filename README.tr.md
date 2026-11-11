@@ -1,21 +1,30 @@
 # vibecode-wrapped
 
+[![npm version](https://img.shields.io/npm/v/vibecode-wrapped)](https://www.npmjs.com/package/vibecode-wrapped)
+[![npm downloads](https://img.shields.io/npm/dm/vibecode-wrapped)](https://www.npmjs.com/package/vibecode-wrapped)
+[![license](https://img.shields.io/npm/l/vibecode-wrapped)](LICENSE)
+
 [English](README.md) · **Türkçe**
 
 Yapay zekâ kodlama ajanlarıyla geçen yılının özeti. Tek bir komut, bilgisayarındaki Claude Code ve Codex kayıtlarını okur; bunları bir dizi karta ve paylaşılabilir bir görsele dönüştürür.
+
+<p align="center">
+  <img src="docs/demo.gif" width="360" alt="Kartlar sırayla oynuyor: saatler, seri, token'lar, kişilik ve paylaşılabilir görsel">
+</p>
+
+## Nasıl çalıştırılır
+
+Kurulum ya da üyelik gerekmez.
+
+1. Bilgisayarında [Node.js](https://nodejs.org) 18 ya da daha yenisi olsun. Kontrol etmek için terminale `node -v` yaz.
+2. Bir terminal aç: macOS ve Linux'ta Terminal, Windows'ta PowerShell.
+3. Şunu yapıştırıp Enter'a bas:
 
 ```bash
 npx vibecode-wrapped
 ```
 
-<p>
-  <img src="docs/card-hours.png" width="24%" alt="Kart: ajanlarla kod yazarak geçen saatler">
-  <img src="docs/card-rhythm.png" width="24%" alt="Kart: günün en yoğun saati">
-  <img src="docs/card-prompts.png" width="24%" alt="Kart: gönderilen prompt'lar ve en çok kullanılan araçlar">
-  <img src="docs/card-persona.png" width="24%" alt="Kart: kodlama kişiliğin">
-</p>
-
-Ekran görüntüleri örnek veriyle hazırlandı. Kayıt olmadan aynı kartları görmek için `npx vibecode-wrapped --demo` çalıştır.
+Kartların tarayıcıda açılır. Henüz Claude Code ya da Codex kaydın yok mu? Örnek veriyle görmek için `npx vibecode-wrapped --demo` çalıştır; yukarıdaki GIF de böyle hazırlandı.
 
 ## Neler var
 
