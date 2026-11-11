@@ -1,6 +1,6 @@
 {
   "name": "vibecode-wrapped",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Your year with AI coding agents, wrapped. Spotify Wrapped-style recap for Claude Code and Codex. 100% local.",
   "type": "module",
   "bin": {
@@ -30,7 +30,10 @@
   ],
   "license": "MIT",
   "author": "BerkanAtik",
-  "repository": { "type": "git", "url": "git+https://github.com/BerkanAtik/vibecode-wrapped.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BerkanAtik/vibecode-wrapped.git"
+  },
   "homepage": "https://github.com/BerkanAtik/vibecode-wrapped#readme",
   "bugs": "https://github.com/BerkanAtik/vibecode-wrapped/issues",
   "devDependencies": {
