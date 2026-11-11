@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent Wrapped</title>
+<link rel="icon" href="data:,">
+<style>
+@font-face {
+  font-family: Archivo;
+  src: url(archivo.woff2) format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: block;
+}
+:root {
+  --ink: #17122b;
+  --bone: #fff3dc;
+  --ultra: #3a2bff;
+  --flamingo: #ff5c9a;
+  --tangerine: #ff7a1a;
+  --mint: #8cf2c0;
+  --butter: #ffd23f;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body {
+  font-family: Archivo, "Arial Narrow", Arial, sans-serif;
+  background: var(--ink);
+  color: var(--bone);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.slide {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px 0 40px;
+  background: var(--bg);
+  color: var(--fg);
+  visibility: hidden;
+  cursor: pointer;
+}
+.slide.on { visibility: visible; }
+.col { width: min(92vw, 980px); margin: 0 auto; }
+
+.lead, .after {
+  font-size: clamp(21px, 3.1vw, 42px);
+  font-weight: 600;
+  line-height: 1.15;
+  max-width: 21em;
+  text-wrap: balance;
+}
+.big {
+  font-weight: 900;
+  font-stretch: 62%;
+  line-height: 0.8;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  margin: 0.14em 0 0.16em -0.03em;
+  color: var(--ac);
+}
+.big span { display: block; width: max-content; }
+.note {
+  margin-top: 1.1em;
+  font-size: clamp(14px, 1.5vw, 18px);
+  font-weight: 500;
+  line-height: 1.35;
+  max-width: 34em;
+  opacity: 0.75;
+}
+.extra { margin-top: clamp(18px, 4vh, 40px); }
+
+/* 24-hour chart */
+.hours { display: flex; align-items: flex-end; gap: 3px; height: clamp(84px, 17vh, 170px); }
+.hours i { flex: 1; background: var(--ac); min-height: 3px; border-radius: 2px 2px 0 0; transform-origin: bottom; }
+.axis { display: flex; justify-content: space-between; margin-top: 8px; font-size: 14px; font-weight: 600; opacity: 0.75; }
+
+/* calendar */
+.cal { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); grid-template-rows: repeat(7, auto); gap: clamp(1px, 0.4vw, 3px); }
+.cal i { aspect-ratio: 1; background: var(--fg); border-radius: 2px; }
+
+/* ranked rows */
+.rows { display: grid; gap: 5px; max-width: 640px; }
+.row { position: relative; display: flex; justify-content: space-between; gap: 16px; padding: 7px 10px; font-size: clamp(16px, 1.9vw, 21px); font-weight: 700; }
+.row b { position: absolute; inset: 0 auto 0 0; background: var(--bar, var(--ac)); border-radius: 3px; transform-origin: left; }
+.row span { position: relative; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row span + span { flex: none; font-variant-numeric: tabular-nums; }
+
+/* entrance: one sequence per card */
+@media (prefers-reduced-motion: no-preference) {
+  .on .lead { animation: rise 0.45s both; }
+  .on .big { animation: rise 0.5s 0.12s both; }
+  .on .after { animation: rise 0.5s 0.75s both; }
+  .on .extra, .on .note { animation: rise 0.5s 1.05s both; }
+  .on .hours i, .on .row b { animation: grow 0.7s 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .on .hours i { animation-name: growUp; }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+@keyframes grow { from { transform: scaleX(0); } }
+@keyframes growUp { from { transform: scaleY(0); } }
+
+/* chrome */
+.progress { position: fixed; top: 14px; left: 0; right: 0; z-index: 5; display: flex; gap: 4px; width: min(92vw, 980px); margin: 0 auto; pointer-events: none; }
+.progress i { flex: 1; height: 4px; border-radius: 2px; background: currentColor; opacity: 0.28; }
+.progress i.done { opacity: 1; }
+.hint { position: fixed; bottom: 16px; left: 0; right: 0; z-index: 5; text-align: center; font-size: 14px; font-weight: 600; opacity: 0.7; pointer-events: none; }
+
+/* share card */
+.share { cursor: default; }
+.share .col { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: clamp(18px, 4vw, 56px); }
+.share canvas { height: min(62vh, 115vw); aspect-ratio: 4 / 5; border-radius: 10px; box-shadow: 0 18px 50px rgb(0 0 0 / 0.35); }
+.actions { display: grid; gap: 10px; width: min(100%, 300px); }
+.actions p { font-size: 15px; font-weight: 500; line-height: 1.35; opacity: 0.8; margin-top: 6px; }
+button {
+  font: inherit; font-size: 18px; font-weight: 700;
+  padding: 13px 18px; border-radius: 8px; border: 2px solid var(--fg);
+  background: transparent; color: var(--fg); cursor: pointer; text-align: left;
+}
+button.main { background: var(--fg); color: var(--bg); }
+button:hover { background: var(--ac); border-color: var(--ac); color: var(--ink); }
+button:focus-visible { outline: 3px solid var(--ac); outline-offset: 3px; }
+@media (max-width: 700px) {
+  .share canvas { height: min(46vh, 110vw); }
+  .actions { grid-template-columns: 1fr 1fr; width: 100%; }
+  .actions p { grid-column: 1 / -1; }
+  button { font-size: 16px; padding: 11px 12px; }
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<main id="deck"></main>
+<div class="hint" id="hint">Tap, or press → to continue</div>
+
+<script>
+const W = /*DATA*/null;
+
+const C = { ink: "#17122b", bone: "#fff3dc", ultra: "#3a2bff", flamingo: "#ff5c9a", tangerine: "#ff7a1a", mint: "#8cf2c0", butter: "#ffd23f" };
+const PERSONA = {
+  "night-owl": [C.ink, C.bone, C.butter],
+  "early-bird": [C.butter, C.ink, C.ultra],
+  "weekend-warrior": [C.flamingo, C.ink, C.bone],
+  "marathoner": [C.tangerine, C.ink, C.bone],
+  "streaker": [C.mint, C.ink, C.ultra],
+  "orchestrator": [C.ultra, C.bone, C.butter],
+  "terminal-native": [C.ink, C.bone, C.mint],
+  "refactorer": [C.bone, C.ink, C.ultra],
+  "builder": [C.ultra, C.bone, C.butter],
+};
+
+const t = W.totals;
+const fmt = (n) => Math.round(n).toLocaleString("en-US");
+const compact = (n) => {
+  for (const [v, s] of [[1e9, "B"], [1e6, "M"], [1e3, "K"]]) {
+    if (n >= v) return (n / v).toFixed(n / v >= 100 ? 0 : 1).replace(/\.0$/, "") + s;
+  }
+  return String(Math.round(n));
+};
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const plural = (n, word) => `${fmt(n)} ${word}${Math.round(n) === 1 ? "" : "s"}`;
+const hourName = (h) => (h % 12 || 12) + (h < 12 ? "am" : "pm");
+const dateName = (key) => {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+const toolName = (n) => {
+  const m = /^mcp__(.+?)__(.+)$/.exec(n);
+  return m ? `${m[2]} (${m[1]})` : n;
+};
+const hoursTotal = t.activeMinutes / 60;
+const isYear = /^\d{4}$/.test(W.label);
+
+function rows(items, format = compact) {
+  const max = Math.max(...items.map((i) => i.count), 1);
+  return `<div class="rows">${items
+    .map((i) => `<div class="row"><b style="width:${Math.max(2, (i.count / max) * 100)}%"></b><span>${esc(i.name)}</span><span>${format(i.count)}</span></div>`)
+    .join("")}</div>`;
+}
+
+function hoursChart() {
+  const max = Math.max(...W.hours, 1);
+  return `<div class="hours" role="img" aria-label="Activity by hour of day">${W.hours
+    .map((m) => `<i style="height:${(m / max) * 100}%"></i>`)
+    .join("")}</div><div class="axis"><span>12am</span><span>6am</span><span>noon</span><span>6pm</span><span>11pm</span></div>`;
+}
+
+function calendar() {
+  const keys = Object.keys(W.days).sort();
+  if (!keys.length) return "";
+  const parse = (k) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
+  const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const end = parse(keys[keys.length - 1]);
+  end.setDate(end.getDate() + (6 - end.getDay()));
+  let start = parse(keys[0]);
+  start.setDate(start.getDate() - start.getDay());
+  const minWeeks = 16, maxWeeks = 53;
+  let weeks = Math.round((end - start) / 6048e5) + 1;
+  if (weeks < minWeeks || weeks > maxWeeks) {
+    weeks = Math.min(maxWeeks, Math.max(minWeeks, weeks));
+    start = new Date(end);
+    start.setDate(start.getDate() - weeks * 7 + 1);
+  }
+  const max = Math.max(...Object.values(W.days));
+  let cells = "";
+  for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const m = W.days[key(d)] || 0;
+    cells += `<i style="opacity:${m ? 0.3 + 0.7 * Math.sqrt(m / max) : 0.1}"></i>`;
+  }
+  return `<div class="cal" style="width:min(100%, ${weeks * 24}px)" role="img" aria-label="Active days calendar">${cells}</div>`;
+}
+
+const peakHour = W.hours.indexOf(Math.max(...W.hours));
+const peakDay = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][W.weekdays.indexOf(Math.max(...W.weekdays))];
+const perPrompt = t.prompts ? t.toolCalls / t.prompts : 0;
+const modelTotal = W.models.reduce((a, m) => a + m.count, 0) || 1;
+const both = W.sources.claude.sessions && W.sources.codex.sessions;
+const agents = both ? "Claude Code and Codex" : W.sources.codex.sessions ? "Codex" : "Claude Code";
+const [pBg, pFg, pAc] = PERSONA[W.persona.id] || PERSONA.builder;
+
+const slides = [
+  {
+    bg: C.ultra, fg: C.bone, ac: C.butter,
+    lead: "Agent Wrapped",
+    big: { text: isYear ? W.label : "All time" },
+    after: `Your ${isYear ? "year" : "time"} with ${agents}, read from the logs on this computer.`,
+    note: "Nothing was uploaded. This page is served from your own machine.",
+  },
+  {
+    bg: C.butter, fg: C.ink, ac: C.ultra,
+    lead: "You spent",
+    big: { n: hoursTotal, f: fmt },
+    after: `hours coding with agents, across ${plural(t.activeDays, "day")}.`,
+    note: [
+      hoursTotal >= 40 ? `That is ${(hoursTotal / 40).toFixed(1)} forty-hour work weeks.` : "",
+      W.longestSession ? `Your longest sitting ran ${(W.longestSession.minutes / 60).toFixed(1)} hours on ${dateName(W.longestSession.date)}.` : "",
+      "Breaks longer than five minutes are not counted.",
+    ].join(" "),
+  },
+  {
+    bg: C.ink, fg: C.bone, ac: C.flamingo,
+    lead: "Your day peaks around",
+    big: { text: hourName(peakHour) },
+    after: `${peakDay}s were your biggest day of the week.`,
+    extra: hoursChart(),
+  },
+  {
+    bg: C.mint, fg: C.ink, ac: C.ultra,
+    lead: "Your longest streak was",
+    big: { n: W.longestStreak, f: fmt },
+    after: `day${W.longestStreak === 1 ? "" : "s"} in a row.${W.busiestDay ? ` Busiest day: ${dateName(W.busiestDay.date)}, ${(W.busiestDay.minutes / 60).toFixed(1)} hours.` : ""}`,
+    extra: calendar(),
+  },
+  {
+    bg: C.flamingo, fg: C.ink, ac: C.bone,
+    lead: "You sent",
+    big: { n: t.prompts, f: fmt },
+    after: `prompts. Your agents answered with ${fmt(t.toolCalls)} tool calls${perPrompt >= 1.5 ? `, about ${Math.round(perPrompt)} for each one` : ""}.`,
+    extra: rows(W.tools.slice(0, 5).map((x) => ({ name: toolName(x.name), count: x.count })), fmt),
+  },
+  {
+    bg: C.tangerine, fg: C.ink, ac: C.bone,
+    lead: "Together you went through",
+    big: { n: t.tokens, f: compact },
+    after: `tokens. At API list prices that is about $${fmt(t.costUSD)}.`,
+    extra: rows(W.models.slice(0, 4), (n) => (n / modelTotal < 0.01 ? "<1%" : Math.round((n / modelTotal) * 100) + "%")),
+    note: "Most tokens are cached context being re-read. The cost is an estimate from public prices, not your bill.",
+  },
+  {
+    bg: C.bone, fg: C.ink, ac: C.ultra,
+    lead: "Your agents wrote",
+    big: { n: t.linesAdded, f: fmt },
+    after: `lines of code and deleted ${fmt(t.linesRemoved)}${t.projects > 1 ? `, across ${t.projects} projects` : ""}.`,
+    extra: rows(W.languages.slice(0, 5)),
+    bar: C.butter,
+  },
+  {
+    bg: pBg, fg: pFg, ac: pAc,
+    lead: "All of which makes you the",
+    big: { text: W.persona.title.replace(/^The /, ""), stack: true },
+    after: W.persona.reason[0].toUpperCase() + W.persona.reason.slice(1) + ".",
+  },
+];
+
+/* ---------- render ---------- */
+const deck = document.getElementById("deck");
+const progress = document.getElementById("progress");
+const hint = document.getElementById("hint");
+
+deck.innerHTML =
+  slides
+    .map((s, i) => {
+      const lines = s.big.stack ? s.big.text.split(" ") : [s.big.text ?? s.big.f(s.big.n)];
+      return `<section class="slide" style="--bg:${s.bg};--fg:${s.fg};--ac:${s.ac}${s.bar ? `;--bar:${s.bar}` : ""}" aria-label="Card ${i + 1} of ${slides.length + 1}">
+  <div class="col">
+    <p class="lead">${esc(s.lead)}</p>
+    <div class="big">${lines.map((l) => `<span>${esc(l)}</span>`).join("")}</div>
+    <p class="after">${esc(s.after)}</p>
+    ${s.extra ? `<div class="extra">${s.extra}</div>` : ""}
+    ${s.note ? `<p class="note">${esc(s.note)}</p>` : ""}
+  </div>
+</section>`;
+    })
+    .join("") +
+  `<section class="slide share" style="--bg:${pBg === C.ink ? C.ultra : C.ink};--fg:${C.bone};--ac:${C.butter}" aria-label="Share your card">
+  <div class="col">
+    <canvas id="card" width="1080" height="1350" aria-label="Your Agent Wrapped card"></canvas>
+    <div class="actions">
+      <button class="main" id="download">Download image</button>
+      <button id="copy">Copy image</button>
+      <button id="post">Post on X</button>
+      <button id="again">Watch again</button>
+      <p>The image has totals only: no file names, project names or prompts.</p>
+    </div>
+  </div>
+</section>`;
+
+const sections = [...deck.children];
+progress.innerHTML = sections.map(() => "<i></i>").join("");
+let current = -1;
+
+function fit(section) {
+  const big = section.querySelector(".big");
+  if (!big) return;
+  const col = section.querySelector(".col");
+  const spans = [...big.children];
+  big.style.fontSize = "100px";
+  const widest = Math.max(...spans.map((s) => s.getBoundingClientRect().width));
+  const roomy = !section.querySelector(".extra");
+  const maxHeight = innerHeight * (roomy ? 0.46 : 0.27);
+  const size = Math.min((100 * col.clientWidth) / widest, maxHeight / (spans.length * 0.8));
+  big.style.fontSize = Math.floor(size) + "px";
+}
+
+function countUp(section, big) {
+  const span = section.querySelector(".big span");
+  if (big.n == null || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const started = performance.now();
+  const tick = (now) => {
+    const p = Math.min(1, (now - started - 120) / 900);
+    span.textContent = big.f(big.n * (1 - Math.pow(1 - Math.max(0, p), 3)));
+    if (p < 1 && sections[current] === section) requestAnimationFrame(tick);
+    else span.textContent = big.f(big.n);
+  };
+  requestAnimationFrame(tick);
+}
+
+function go(i) {
+  i = Math.max(0, Math.min(sections.length - 1, i));
+  if (i === current) return;
+  sections[current]?.classList.remove("on");
+  current = i;
+  const section = sections[i];
+  section.classList.add("on");
+  fit(section);
+  if (slides[i]) countUp(section, slides[i].big);
+  else drawCard();
+  [...progress.children].forEach((el, n) => el.classList.toggle("done", n <= i));
+  progress.style.color = hint.style.color = getComputedStyle(section).getPropertyValue("--fg");
+  hint.hidden = i !== 0;
+}
+
+deck.addEventListener("click", (e) => {
+  if (e.target.closest(".share")) return;
+  go(current + (e.clientX < innerWidth * 0.3 ? -1 : 1));
+});
+addEventListener("keydown", (e) => {
+  if (e.target.tagName === "BUTTON" && (e.key === " " || e.key === "Enter")) return;
+  if (["ArrowRight", " ", "Enter", "ArrowDown"].includes(e.key)) go(current + 1);
+  else if (["ArrowLeft", "ArrowUp"].includes(e.key)) go(current - 1);
+});
+let touchX = null;
+addEventListener("touchstart", (e) => (touchX = e.touches[0].clientX), { passive: true });
+addEventListener("touchend", (e) => {
+  if (touchX == null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  touchX = null;
+  if (Math.abs(dx) > 50) go(current + (dx < 0 ? 1 : -1));
+});
+addEventListener("resize", () => current >= 0 && fit(sections[current]));
+
+/* ---------- share image ---------- */
+const canvas = document.getElementById("card");
+
+async function drawCard() {
+  await Promise.all([
+    document.fonts.load("900 extra-condensed 100px Archivo"),
+    document.fonts.load("600 100px Archivo"),
+  ]);
+  const ctx = canvas.getContext("2d");
+  const [bg, fg, ac] = [pBg, pFg, pAc];
+  const M = 72, WIDTH = 1080, HEIGHT = 1350;
+  const cond = (px) => `900 extra-condensed ${px}px Archivo`;
+  const text = (px, weight = 600) => `${weight} ${px}px Archivo`;
+
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  ctx.textBaseline = "alphabetic";
+
+  ctx.fillStyle = fg;
+  ctx.font = text(38, 700);
+  ctx.textAlign = "left";
+  ctx.fillText(`Agent Wrapped ${isYear ? W.label : ""}`.trim(), M, 112);
+  ctx.textAlign = "right";
+  ctx.globalAlpha = 0.75;
+  ctx.fillText(agents.replace(" and ", " + "), WIDTH - M, 112);
+  ctx.globalAlpha = 1;
+  ctx.textAlign = "left";
+
+  // persona, stacked and fitted to the full width
+  const words = W.persona.title.replace(/^The /, "").split(" ");
+  ctx.font = cond(100);
+  const widest = Math.max(...words.map((w) => ctx.measureText(w).width));
+  const size = Math.min((100 * (WIDTH - 2 * M)) / widest, 400 / (words.length * 0.8));
+  ctx.font = cond(size);
+  ctx.fillStyle = ac;
+  let y = 160;
+  for (const w of words) {
+    y += size * 0.8;
+    ctx.fillText(w, M - size * 0.03, y);
+  }
+
+  // reason, wrapped
+  ctx.fillStyle = fg;
+  ctx.font = text(40);
+  const reason = W.persona.reason[0].toUpperCase() + W.persona.reason.slice(1) + ".";
+  let line = "";
+  y += 78;
+  for (const word of reason.split(" ")) {
+    if (line && ctx.measureText(line + " " + word).width > WIDTH - 2 * M) {
+      ctx.fillText(line, M, y);
+      y += 50;
+      line = word;
+    } else line = line ? line + " " + word : word;
+  }
+  ctx.fillText(line, M, y);
+
+  // stats grid
+  const stats = [
+    [fmt(hoursTotal), "hours"],
+    [fmt(t.prompts), "prompts"],
+    [compact(t.toolCalls), "tool calls"],
+    [compact(t.tokens), "tokens"],
+    [compact(t.linesAdded), "lines written"],
+    [String(W.longestStreak), "day streak"],
+  ];
+  const top = y + 64;
+  const cellW = (WIDTH - 2 * M) / 3;
+  stats.forEach(([value, label], i) => {
+    const x = M + (i % 3) * cellW;
+    const cy = top + Math.floor(i / 3) * 190;
+    ctx.fillStyle = fg;
+    ctx.font = cond(118);
+    ctx.fillText(value, x - 3, cy + 96);
+    ctx.font = text(30);
+    ctx.globalAlpha = 0.8;
+    ctx.fillText(label, x, cy + 148);
+    ctx.globalAlpha = 1;
+  });
+
+  // hour strip
+  const stripTop = top + 400, stripH = HEIGHT - 118 - stripTop;
+  if (stripH > 30) {
+    const max = Math.max(...W.hours, 1), bw = (WIDTH - 2 * M) / 24;
+    ctx.fillStyle = ac;
+    W.hours.forEach((m, h) => {
+      const bh = Math.max(4, (m / max) * stripH);
+      ctx.fillRect(M + h * bw, stripTop + stripH - bh, bw - 5, bh);
+    });
+  }
+
+  ctx.fillStyle = fg;
+  ctx.font = text(34, 700);
+  ctx.fillText("npx agent-wrapped", M, HEIGHT - 58);
+  ctx.textAlign = "right";
+  ctx.globalAlpha = 0.75;
+  ctx.font = text(30);
+  ctx.fillText("made on my own machine", WIDTH - M, HEIGHT - 58);
+  ctx.globalAlpha = 1;
+}
+
+const blob = () => new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+const flash = (button, message) => {
+  const original = button.textContent;
+  button.textContent = message;
+  setTimeout(() => (button.textContent = original), 1800);
+};
+
+document.getElementById("download").onclick = async (e) => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(await blob());
+  a.download = `agent-wrapped-${W.label.replace(/\s+/g, "-")}.png`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  flash(e.currentTarget, "Downloaded");
+};
+document.getElementById("copy").onclick = async (e) => {
+  const button = e.currentTarget;
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob() })]);
+    flash(button, "Copied");
+  } catch {
+    flash(button, "Copy failed, use Download");
+  }
+};
+document.getElementById("post").onclick = () => {
+  const message = `My ${isYear ? W.label : "time"} with coding agents: ${W.persona.title}.\n\n${fmt(hoursTotal)} hours, ${fmt(t.prompts)} prompts, ${compact(t.tokens)} tokens.\n\nGet yours: npx agent-wrapped`;
+  open("https://x.com/intent/post?text=" + encodeURIComponent(message), "_blank", "noopener");
+};
+document.getElementById("again").onclick = () => go(0);
+
+document.fonts.ready.then(() => go(0));
+</script>
+</body>
+</html>
