@@ -1,4 +1,4 @@
-import { pickPersona, type Wrapped } from "./stats.js";
+import { persona, pickPersona, type Wrapped } from "./stats.js";
 
 /** Made-up but believable data, so the cards can be tried (and screenshotted) without real logs. */
 export function demoWrapped(year: number): Wrapped {
@@ -79,7 +79,7 @@ export function demoWrapped(year: number): Wrapped {
     busiestDay,
     longestStreak,
     longestSession: { date: busiestDay!.date, minutes: 312, source: "claude" },
-    persona: { id: "", title: "", reason: "" },
+    persona: persona("builder", 0), // replaced below
   };
   wrapped.persona = pickPersona(wrapped);
   return wrapped;

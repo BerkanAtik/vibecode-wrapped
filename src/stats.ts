@@ -1,5 +1,6 @@
 import { basename } from "node:path";
 import type { Aggregator, Source } from "./aggregate.js";
+import { personaText, type Lang, type PersonaText } from "./i18n.js";
 
 export interface Ranked {
   name: string;
@@ -8,8 +9,10 @@ export interface Ranked {
 
 export interface Persona {
   id: string;
-  title: string;
+  value: number;
+  title: string; // English, kept for --json users
   reason: string;
+  text: Record<Lang, PersonaText>;
 }
 
 export interface Wrapped {
@@ -134,13 +137,16 @@ export function buildWrapped(agg: Aggregator, label: string): Wrapped {
     busiestDay,
     longestStreak,
     longestSession: longest,
-    persona: { id: "", title: "", reason: "" },
+    persona: persona("builder", 0), // replaced below
   };
   wrapped.persona = pickPersona(wrapped);
   return wrapped;
 }
 
-const pct = (x: number) => `${Math.round(x * 100)}%`;
+export function persona(id: string, value: number): Persona {
+  const en = personaText(id, value, "en");
+  return { id, value, title: en.title, reason: en.reason, text: { en, tr: personaText(id, value, "tr") } };
+}
 
 /** Picks the trait that stands out most; each candidate scores 0..1+ against its own threshold. */
 export function pickPersona(w: Wrapped): Persona {
@@ -156,19 +162,17 @@ export function pickPersona(w: Wrapped): Persona {
   const longest = w.longestSession?.minutes ?? 0;
   const churn = w.totals.linesAdded ? w.totals.linesRemoved / w.totals.linesAdded : 0;
 
-  const candidates: (Persona & { score: number })[] = [
-    { id: "night-owl", title: "The Night Owl", score: night / 0.25, reason: `${pct(night)} of your coding happened between 11pm and 5am` },
-    { id: "early-bird", title: "The Early Bird", score: morning / 0.25, reason: `${pct(morning)} of your coding happened before 9am` },
-    { id: "weekend-warrior", title: "The Weekend Warrior", score: weekend / 0.4, reason: `${pct(weekend)} of your coding happened on weekends` },
-    { id: "marathoner", title: "The Marathoner", score: longest / 300, reason: `your longest session ran ${Math.round(longest / 60)} hours without a real break` },
-    { id: "streaker", title: "The Streaker", score: w.longestStreak / 21, reason: `you showed up ${w.longestStreak} days in a row` },
-    { id: "orchestrator", title: "The Orchestrator", score: delegate / 0.04, reason: `${pct(delegate)} of your tool calls sent other agents to do the work` },
-    { id: "terminal-native", title: "The Terminal Native", score: shell / 0.45, reason: `${pct(shell)} of your tool calls were shell commands` },
-    { id: "refactorer", title: "The Refactorer", score: churn / 0.7, reason: `you deleted ${pct(churn)} as many lines as you wrote` },
+  // [id, score, value shown in the reason]
+  const candidates: [string, number, number][] = [
+    ["night-owl", night / 0.25, night],
+    ["early-bird", morning / 0.25, morning],
+    ["weekend-warrior", weekend / 0.4, weekend],
+    ["marathoner", longest / 300, Math.round(longest / 60)],
+    ["streaker", w.longestStreak / 21, w.longestStreak],
+    ["orchestrator", delegate / 0.04, delegate],
+    ["terminal-native", shell / 0.45, shell],
+    ["refactorer", churn / 0.7, churn],
   ];
-  const best = candidates.sort((a, b) => b.score - a.score)[0];
-  if (best.score < 1) {
-    return { id: "builder", title: "The Builder", reason: `${w.totals.sessions} sessions, one steady rhythm` };
-  }
-  return { id: best.id, title: best.title, reason: best.reason };
+  const [id, score, value] = candidates.sort((a, b) => b[1] - a[1])[0];
+  return score < 1 ? persona("builder", w.totals.sessions) : persona(id, value);
 }

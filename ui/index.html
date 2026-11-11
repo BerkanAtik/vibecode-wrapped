@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Agent Wrapped</title>
+<title>Vibe Wrapped</title>
 <link rel="icon" href="data:,">
 <style>
 @font-face {
@@ -12,6 +12,15 @@
   font-weight: 100 900;
   font-stretch: 62% 125%;
   font-display: block;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: Archivo;
+  src: url(archivo-ext.woff2) format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: block;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+20A0-20AB, U+20AD-20C0, U+2C60-2C7F, U+A720-A7FF;
 }
 :root {
   --ink: #17122b;
@@ -111,6 +120,13 @@ body {
 .progress i { flex: 1; height: 4px; border-radius: 2px; background: currentColor; opacity: 0.28; }
 .progress i.done { opacity: 1; }
 .hint { position: fixed; bottom: 16px; left: 0; right: 0; z-index: 5; text-align: center; font-size: 14px; font-weight: 600; opacity: 0.7; pointer-events: none; }
+button.lang {
+  position: fixed; top: 28px; right: max(4vw, calc(50vw - 490px)); z-index: 6;
+  font-size: 14px; padding: 5px 12px; border-radius: 999px; border-color: currentColor;
+  opacity: 0.8;
+}
+button.lang:hover { background: transparent; border-color: currentColor; opacity: 1; }
+button.lang:focus-visible { outline-color: currentColor; }
 
 /* share card */
 .share { cursor: default; }
@@ -137,10 +153,16 @@ button:focus-visible { outline: 3px solid var(--ac); outline-offset: 3px; }
 <body>
 <div class="progress" id="progress"></div>
 <main id="deck"></main>
-<div class="hint" id="hint">Tap, or press → to continue</div>
+<div class="hint" id="hint"></div>
+<button class="lang" id="lang" type="button"></button>
 
 <script>
 const W = /*DATA*/null;
+let lang = /*LANG*/"en";
+try {
+  const q = new URLSearchParams(location.search).get("lang");
+  if (q === "en" || q === "tr") lang = q;
+} catch {}
 
 const C = { ink: "#17122b", bone: "#fff3dc", ultra: "#3a2bff", flamingo: "#ff5c9a", tangerine: "#ff7a1a", mint: "#8cf2c0", butter: "#ffd23f" };
 const PERSONA = {
@@ -155,20 +177,27 @@ const PERSONA = {
   "builder": [C.ultra, C.bone, C.butter],
 };
 
+/* ---------- numbers and dates, per language ---------- */
 const t = W.totals;
-const fmt = (n) => Math.round(n).toLocaleString("en-US");
-const compact = (n) => {
-  for (const [v, s] of [[1e9, "B"], [1e6, "M"], [1e3, "K"]]) {
-    if (n >= v) return (n / v).toFixed(n / v >= 100 ? 0 : 1).replace(/\.0$/, "") + s;
+const tr = () => lang === "tr";
+const locale = () => (tr() ? "tr-TR" : "en-US");
+const fmt = (n) => Math.round(n).toLocaleString(locale());
+const dec = (n) => n.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+function scaled(n, units) {
+  for (const [v, s] of units) {
+    if (n >= v) return (n / v).toLocaleString(locale(), { maximumFractionDigits: n / v >= 100 ? 0 : 1 }) + s;
   }
   return String(Math.round(n));
-};
+}
+// Short units for lists and the image; Turkish spells them out on the big number, where "Mr" would puzzle.
+const compact = (n) => scaled(n, tr() ? [[1e9, " Mr"], [1e6, " Mn"], [1e3, " B"]] : [[1e9, "B"], [1e6, "M"], [1e3, "K"]]);
+const compactBig = (n) => (tr() ? scaled(n, [[1e9, " milyar"], [1e6, " milyon"], [1e3, " bin"]]) : compact(n));
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const plural = (n, word) => `${fmt(n)} ${word}${Math.round(n) === 1 ? "" : "s"}`;
-const hourName = (h) => (h % 12 || 12) + (h < 12 ? "am" : "pm");
+const hourName = (h) => (tr() ? String(h).padStart(2, "0") + ":00" : (h % 12 || 12) + (h < 12 ? "am" : "pm"));
 const dateName = (key) => {
   const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(y, m - 1, d).toLocaleDateString(locale(), { month: tr() ? "long" : "short", day: "numeric" });
 };
 const toolName = (n) => {
   const m = /^mcp__(.+?)__(.+)$/.exec(n);
@@ -176,7 +205,93 @@ const toolName = (n) => {
 };
 const hoursTotal = t.activeMinutes / 60;
 const isYear = /^\d{4}$/.test(W.label);
+const peakHour = W.hours.indexOf(Math.max(...W.hours));
+const peakDayIndex = W.weekdays.indexOf(Math.max(...W.weekdays));
+const perPrompt = t.prompts ? t.toolCalls / t.prompts : 0;
+const modelTotal = W.models.reduce((a, m) => a + m.count, 0) || 1;
+const hasClaude = W.sources.claude.sessions > 0, hasCodex = W.sources.codex.sessions > 0;
+const both = hasClaude && hasCodex;
+const [pBg, pFg, pAc] = PERSONA[W.persona.id] || PERSONA.builder;
+const persona = () => {
+  const p = (W.persona.text && W.persona.text[lang]) || W.persona;
+  return { title: p.title.replace(/^The /, ""), full: p.title, reason: p.reason[0].toUpperCase() + p.reason.slice(1) + "." };
+};
 
+/* ---------- words ---------- */
+const TEXT = {
+  en: {
+    other: "Türkçe", otherLabel: "Kartları Türkçe göster",
+    hint: "Tap, or press → to continue",
+    card: (i, n) => `Card ${i} of ${n}`,
+    agents: (both ? "Claude Code and Codex" : hasCodex ? "Codex" : "Claude Code"),
+    axis: ["12am", "6am", "noon", "6pm", "11pm"],
+    hoursAria: "Activity by hour of day",
+    calAria: "Active days calendar",
+    days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    share: { aria: "Share your card", image: "Your Vibe Wrapped card", download: "Download image", copy: "Copy image", post: "Post on X", again: "Watch again",
+      note: "The image has totals only: no file names, project names or prompts.", downloaded: "Downloaded", copied: "Copied", copyFailed: "Copy failed, use Download",
+      stats: ["hours", "prompts", "tool calls", "tokens", "lines written", "day streak"], footer: "made on my own machine" },
+    post: (h, p, k) => `My ${isYear ? W.label : "time"} with coding agents: ${persona().full}.\n\n${h} hours, ${p} prompts, ${k} tokens.\n\nGet yours: npx vibe-wrapped`,
+    slides: (a) => [
+      { lead: "Vibe Wrapped", big: isYear ? W.label : "All time",
+        after: `Your ${isYear ? "year" : "time"} with ${a}, read from the logs on this computer.`,
+        note: "Nothing was uploaded. This page is served from your own machine." },
+      { lead: "You spent",
+        after: `hours coding with agents, across ${plural(t.activeDays, "day")}.`,
+        note: [
+          hoursTotal >= 40 ? `That is ${dec(hoursTotal / 40)} forty-hour work weeks.` : "",
+          W.longestSession ? `Your longest sitting ran ${dec(W.longestSession.minutes / 60)} hours on ${dateName(W.longestSession.date)}.` : "",
+          "Breaks longer than five minutes are not counted.",
+        ].join(" ") },
+      { lead: "Your day peaks around", after: `${TEXT.en.days[peakDayIndex]}s were your biggest day of the week.` },
+      { lead: "Your longest streak was",
+        after: `day${W.longestStreak === 1 ? "" : "s"} in a row.${W.busiestDay ? ` Busiest day: ${dateName(W.busiestDay.date)}, ${dec(W.busiestDay.minutes / 60)} hours.` : ""}` },
+      { lead: "You sent",
+        after: `prompts. Your agents answered with ${fmt(t.toolCalls)} tool calls${perPrompt >= 1.5 ? `, about ${Math.round(perPrompt)} for each one` : ""}.` },
+      { lead: "Together you went through", after: `tokens. At API list prices that is about $${fmt(t.costUSD)}.`,
+        note: "Most tokens are cached context being re-read. The cost is an estimate from public prices, not your bill." },
+      { lead: "Your agents wrote", after: `lines of code and deleted ${fmt(t.linesRemoved)}${t.projects > 1 ? `, across ${t.projects} projects` : ""}.` },
+      { lead: "All of which makes you the", after: persona().reason },
+    ],
+  },
+  tr: {
+    other: "English", otherLabel: "Show the cards in English",
+    hint: "Devam etmek için dokun ya da → tuşuna bas",
+    card: (i, n) => `Kart ${i} / ${n}`,
+    agents: (both ? "Claude Code ve Codex" : hasCodex ? "Codex" : "Claude Code"),
+    axis: ["00:00", "06:00", "12:00", "18:00", "23:00"],
+    hoursAria: "Günün saatlerine göre etkinlik",
+    calAria: "Aktif günler takvimi",
+    days: ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"],
+    share: { aria: "Kartını paylaş", image: "Vibe Wrapped kartın", download: "Görseli indir", copy: "Görseli kopyala", post: "X'te paylaş", again: "Baştan izle",
+      note: "Görselde yalnız toplamlar var; dosya adı, proje adı ya da prompt yok.", downloaded: "İndirildi", copied: "Kopyalandı", copyFailed: "Kopyalanamadı, indirmeyi dene",
+      stats: ["saat", "prompt", "araç çağrısı", "token", "satır kod", "günlük seri"], footer: "kendi bilgisayarımda üretildi" },
+    post: (h, p, k) => `Kodlama ajanlarıyla ${isYear ? W.label + " yılım" : "tüm zamanlarım"}: ${persona().full}.\n\n${h} saat, ${p} prompt, ${k} token.\n\nSeninkini gör: npx vibe-wrapped`,
+    slides: (a) => [
+      { lead: "Vibe Wrapped", big: isYear ? W.label : "Tüm zamanlar",
+        after: `${a} ile geçen ${isYear ? "yılın" : "zamanın"}, bu bilgisayardaki kayıtlardan okundu.`,
+        note: "Hiçbir şey yüklenmedi. Bu sayfa kendi bilgisayarından açılıyor." },
+      { lead: "Ajanlarla kod yazarak geçirdiğin süre",
+        after: `saat. Toplam ${fmt(t.activeDays)} güne yayıldı.`,
+        note: [
+          hoursTotal >= 40 ? `Bu, kırk saatlik ${dec(hoursTotal / 40)} iş haftasına denk geliyor.` : "",
+          W.longestSession ? `En uzun oturumun ${dateName(W.longestSession.date)} tarihinde ${dec(W.longestSession.minutes / 60)} saat sürdü.` : "",
+          "Beş dakikadan uzun molalar sayılmadı.",
+        ].join(" ") },
+      { lead: "Günün en yoğun saati", after: `Haftanın en yoğun günü: ${TEXT.tr.days[peakDayIndex]}.` },
+      { lead: "En uzun serin",
+        after: `gün üst üste.${W.busiestDay ? ` En yoğun günün: ${dateName(W.busiestDay.date)}, ${dec(W.busiestDay.minutes / 60)} saat.` : ""}` },
+      { lead: "Gönderdiğin prompt sayısı",
+        after: `Ajanların buna ${fmt(t.toolCalls)} araç çağrısıyla karşılık verdi${perPrompt >= 1.5 ? `, prompt başına yaklaşık ${Math.round(perPrompt)}` : ""}.` },
+      { lead: "Birlikte harcadığınız token", after: `API liste fiyatlarıyla bu yaklaşık ${fmt(t.costUSD)} dolar ediyor.`,
+        note: "Token'ların çoğu, tekrar tekrar okunan önbellekteki bağlam. Maliyet resmî fiyatlardan yapılmış bir tahmin; faturan değil." },
+      { lead: "Ajanlarının yazdığı kod", after: `satır. Bunun yanında ${fmt(t.linesRemoved)} satır silindi${t.projects > 1 ? `, toplam ${t.projects} projede` : ""}.` },
+      { lead: "Kodlama kişiliğin", after: persona().reason },
+    ],
+  },
+};
+
+/* ---------- card parts ---------- */
 function rows(items, format = compact) {
   const max = Math.max(...items.map((i) => i.count), 1);
   return `<div class="rows">${items
@@ -186,9 +301,9 @@ function rows(items, format = compact) {
 
 function hoursChart() {
   const max = Math.max(...W.hours, 1);
-  return `<div class="hours" role="img" aria-label="Activity by hour of day">${W.hours
+  return `<div class="hours" role="img" aria-label="${esc(L().hoursAria)}">${W.hours
     .map((m) => `<i style="height:${(m / max) * 100}%"></i>`)
-    .join("")}</div><div class="axis"><span>12am</span><span>6am</span><span>noon</span><span>6pm</span><span>11pm</span></div>`;
+    .join("")}</div><div class="axis">${L().axis.map((a) => `<span>${a}</span>`).join("")}</div>`;
 }
 
 function calendar() {
@@ -213,91 +328,50 @@ function calendar() {
     const m = W.days[key(d)] || 0;
     cells += `<i style="opacity:${m ? 0.3 + 0.7 * Math.sqrt(m / max) : 0.1}"></i>`;
   }
-  return `<div class="cal" style="width:min(100%, ${weeks * 24}px)" role="img" aria-label="Active days calendar">${cells}</div>`;
+  return `<div class="cal" style="width:min(100%, ${weeks * 24}px)" role="img" aria-label="${esc(L().calAria)}">${cells}</div>`;
 }
 
-const peakHour = W.hours.indexOf(Math.max(...W.hours));
-const peakDay = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][W.weekdays.indexOf(Math.max(...W.weekdays))];
-const perPrompt = t.prompts ? t.toolCalls / t.prompts : 0;
-const modelTotal = W.models.reduce((a, m) => a + m.count, 0) || 1;
-const both = W.sources.claude.sessions && W.sources.codex.sessions;
-const agents = both ? "Claude Code and Codex" : W.sources.codex.sessions ? "Codex" : "Claude Code";
-const [pBg, pFg, pAc] = PERSONA[W.persona.id] || PERSONA.builder;
+const L = () => TEXT[lang];
 
-const slides = [
-  {
-    bg: C.ultra, fg: C.bone, ac: C.butter,
-    lead: "Agent Wrapped",
-    big: { text: isYear ? W.label : "All time" },
-    after: `Your ${isYear ? "year" : "time"} with ${agents}, read from the logs on this computer.`,
-    note: "Nothing was uploaded. This page is served from your own machine.",
-  },
-  {
-    bg: C.butter, fg: C.ink, ac: C.ultra,
-    lead: "You spent",
-    big: { n: hoursTotal, f: fmt },
-    after: `hours coding with agents, across ${plural(t.activeDays, "day")}.`,
-    note: [
-      hoursTotal >= 40 ? `That is ${(hoursTotal / 40).toFixed(1)} forty-hour work weeks.` : "",
-      W.longestSession ? `Your longest sitting ran ${(W.longestSession.minutes / 60).toFixed(1)} hours on ${dateName(W.longestSession.date)}.` : "",
-      "Breaks longer than five minutes are not counted.",
-    ].join(" "),
-  },
-  {
-    bg: C.ink, fg: C.bone, ac: C.flamingo,
-    lead: "Your day peaks around",
-    big: { text: hourName(peakHour) },
-    after: `${peakDay}s were your biggest day of the week.`,
-    extra: hoursChart(),
-  },
-  {
-    bg: C.mint, fg: C.ink, ac: C.ultra,
-    lead: "Your longest streak was",
-    big: { n: W.longestStreak, f: fmt },
-    after: `day${W.longestStreak === 1 ? "" : "s"} in a row.${W.busiestDay ? ` Busiest day: ${dateName(W.busiestDay.date)}, ${(W.busiestDay.minutes / 60).toFixed(1)} hours.` : ""}`,
-    extra: calendar(),
-  },
-  {
-    bg: C.flamingo, fg: C.ink, ac: C.bone,
-    lead: "You sent",
-    big: { n: t.prompts, f: fmt },
-    after: `prompts. Your agents answered with ${fmt(t.toolCalls)} tool calls${perPrompt >= 1.5 ? `, about ${Math.round(perPrompt)} for each one` : ""}.`,
-    extra: rows(W.tools.slice(0, 5).map((x) => ({ name: toolName(x.name), count: x.count })), fmt),
-  },
-  {
-    bg: C.tangerine, fg: C.ink, ac: C.bone,
-    lead: "Together you went through",
-    big: { n: t.tokens, f: compact },
-    after: `tokens. At API list prices that is about $${fmt(t.costUSD)}.`,
-    extra: rows(W.models.slice(0, 4), (n) => (n / modelTotal < 0.01 ? "<1%" : Math.round((n / modelTotal) * 100) + "%")),
-    note: "Most tokens are cached context being re-read. The cost is an estimate from public prices, not your bill.",
-  },
-  {
-    bg: C.bone, fg: C.ink, ac: C.ultra,
-    lead: "Your agents wrote",
-    big: { n: t.linesAdded, f: fmt },
-    after: `lines of code and deleted ${fmt(t.linesRemoved)}${t.projects > 1 ? `, across ${t.projects} projects` : ""}.`,
-    extra: rows(W.languages.slice(0, 5)),
-    bar: C.butter,
-  },
-  {
-    bg: pBg, fg: pFg, ac: pAc,
-    lead: "All of which makes you the",
-    big: { text: W.persona.title.replace(/^The /, ""), stack: true },
-    after: W.persona.reason[0].toUpperCase() + W.persona.reason.slice(1) + ".",
-  },
-];
+// Colours, numbers and charts stay the same in every language; only the words come from TEXT.
+function buildSlides() {
+  const w = L().slides(L().agents);
+  const p = persona();
+  return [
+    { bg: C.ultra, fg: C.bone, ac: C.butter, ...w[0], big: { text: w[0].big } },
+    { bg: C.butter, fg: C.ink, ac: C.ultra, ...w[1], big: { n: hoursTotal, f: fmt } },
+    { bg: C.ink, fg: C.bone, ac: C.flamingo, ...w[2], big: { text: hourName(peakHour) }, extra: hoursChart() },
+    { bg: C.mint, fg: C.ink, ac: C.ultra, ...w[3], big: { n: W.longestStreak, f: fmt }, extra: calendar() },
+    { bg: C.flamingo, fg: C.ink, ac: C.bone, ...w[4], big: { n: t.prompts, f: fmt },
+      extra: rows(W.tools.slice(0, 5).map((x) => ({ name: toolName(x.name), count: x.count })), fmt) },
+    { bg: C.tangerine, fg: C.ink, ac: C.bone, ...w[5], big: { n: t.tokens, f: compactBig },
+      extra: rows(W.models.slice(0, 4), (n) => (n / modelTotal < 0.01 ? (tr() ? "<%1" : "<1%") : tr() ? "%" + Math.round((n / modelTotal) * 100) : Math.round((n / modelTotal) * 100) + "%")) },
+    { bg: C.bone, fg: C.ink, ac: C.ultra, bar: C.butter, ...w[6], big: { n: t.linesAdded, f: fmt }, extra: rows(W.languages.slice(0, 5)) },
+    { bg: pBg, fg: pFg, ac: pAc, ...w[7], big: { text: p.title, stack: true } },
+  ];
+}
 
 /* ---------- render ---------- */
 const deck = document.getElementById("deck");
 const progress = document.getElementById("progress");
 const hint = document.getElementById("hint");
+const langButton = document.getElementById("lang");
+let slides = [], sections = [], canvas = null;
+let current = -1;
 
-deck.innerHTML =
-  slides
-    .map((s, i) => {
-      const lines = s.big.stack ? s.big.text.split(" ") : [s.big.text ?? s.big.f(s.big.n)];
-      return `<section class="slide" style="--bg:${s.bg};--fg:${s.fg};--ac:${s.ac}${s.bar ? `;--bar:${s.bar}` : ""}" aria-label="Card ${i + 1} of ${slides.length + 1}">
+function render() {
+  const s = L().share;
+  slides = buildSlides();
+  document.documentElement.lang = lang;
+  hint.textContent = L().hint;
+  langButton.textContent = L().other;
+  langButton.setAttribute("aria-label", L().otherLabel);
+  langButton.lang = tr() ? "en" : "tr";
+  deck.innerHTML =
+    slides
+      .map((s, i) => {
+        const lines = s.big.stack ? s.big.text.split(" ") : [s.big.text ?? s.big.f(s.big.n)];
+        return `<section class="slide" style="--bg:${s.bg};--fg:${s.fg};--ac:${s.ac}${s.bar ? `;--bar:${s.bar}` : ""}" aria-label="${esc(L().card(i + 1, slides.length + 1))}">
   <div class="col">
     <p class="lead">${esc(s.lead)}</p>
     <div class="big">${lines.map((l) => `<span>${esc(l)}</span>`).join("")}</div>
@@ -306,24 +380,25 @@ deck.innerHTML =
     ${s.note ? `<p class="note">${esc(s.note)}</p>` : ""}
   </div>
 </section>`;
-    })
-    .join("") +
-  `<section class="slide share" style="--bg:${pBg === C.ink ? C.ultra : C.ink};--fg:${C.bone};--ac:${C.butter}" aria-label="Share your card">
+      })
+      .join("") +
+    `<section class="slide share" style="--bg:${pBg === C.ink ? C.ultra : C.ink};--fg:${C.bone};--ac:${C.butter}" aria-label="${esc(s.aria)}">
   <div class="col">
-    <canvas id="card" width="1080" height="1350" aria-label="Your Agent Wrapped card"></canvas>
+    <canvas id="card" width="1080" height="1350" aria-label="${esc(s.image)}"></canvas>
     <div class="actions">
-      <button class="main" id="download">Download image</button>
-      <button id="copy">Copy image</button>
-      <button id="post">Post on X</button>
-      <button id="again">Watch again</button>
-      <p>The image has totals only: no file names, project names or prompts.</p>
+      <button class="main" id="download">${esc(s.download)}</button>
+      <button id="copy">${esc(s.copy)}</button>
+      <button id="post">${esc(s.post)}</button>
+      <button id="again">${esc(s.again)}</button>
+      <p>${esc(s.note)}</p>
     </div>
   </div>
 </section>`;
-
-const sections = [...deck.children];
-progress.innerHTML = sections.map(() => "<i></i>").join("");
-let current = -1;
+  sections = [...deck.children];
+  progress.innerHTML = sections.map(() => "<i></i>").join("");
+  canvas = document.getElementById("card");
+  bindShare();
+}
 
 function fit(section) {
   const big = section.querySelector(".big");
@@ -362,10 +437,17 @@ function go(i) {
   if (slides[i]) countUp(section, slides[i].big);
   else drawCard();
   [...progress.children].forEach((el, n) => el.classList.toggle("done", n <= i));
-  progress.style.color = hint.style.color = getComputedStyle(section).getPropertyValue("--fg");
+  progress.style.color = hint.style.color = langButton.style.color = getComputedStyle(section).getPropertyValue("--fg");
   hint.hidden = i !== 0;
 }
 
+langButton.addEventListener("click", () => {
+  const at = current;
+  lang = tr() ? "en" : "tr";
+  render();
+  current = -1;
+  go(at);
+});
 deck.addEventListener("click", (e) => {
   if (e.target.closest(".share")) return;
   go(current + (e.clientX < innerWidth * 0.3 ? -1 : 1));
@@ -386,14 +468,10 @@ addEventListener("touchend", (e) => {
 addEventListener("resize", () => current >= 0 && fit(sections[current]));
 
 /* ---------- share image ---------- */
-const canvas = document.getElementById("card");
-
 async function drawCard() {
-  await Promise.all([
-    document.fonts.load("900 extra-condensed 100px Archivo"),
-    document.fonts.load("600 100px Archivo"),
-  ]);
+  await document.fonts.load("900 extra-condensed 100px Archivo", "AaİığĞşŞ");
   const ctx = canvas.getContext("2d");
+  const s = L().share;
   const [bg, fg, ac] = [pBg, pFg, pAc];
   const M = 72, WIDTH = 1080, HEIGHT = 1350;
   const cond = (px) => `900 extra-condensed ${px}px Archivo`;
@@ -406,15 +484,16 @@ async function drawCard() {
   ctx.fillStyle = fg;
   ctx.font = text(38, 700);
   ctx.textAlign = "left";
-  ctx.fillText(`Agent Wrapped ${isYear ? W.label : ""}`.trim(), M, 112);
+  ctx.fillText(`Vibe Wrapped ${isYear ? W.label : ""}`.trim(), M, 112);
   ctx.textAlign = "right";
   ctx.globalAlpha = 0.75;
-  ctx.fillText(agents.replace(" and ", " + "), WIDTH - M, 112);
+  ctx.fillText(L().agents.replace(/ (and|ve) /, " + "), WIDTH - M, 112);
   ctx.globalAlpha = 1;
   ctx.textAlign = "left";
 
   // persona, stacked and fitted to the full width
-  const words = W.persona.title.replace(/^The /, "").split(" ");
+  const p = persona();
+  const words = p.title.split(" ");
   ctx.font = cond(100);
   const widest = Math.max(...words.map((w) => ctx.measureText(w).width));
   const size = Math.min((100 * (WIDTH - 2 * M)) / widest, 400 / (words.length * 0.8));
@@ -426,13 +505,13 @@ async function drawCard() {
     ctx.fillText(w, M - size * 0.03, y);
   }
 
-  // reason, wrapped
+  // reason, wrapped; letters that hang below the line (Ş, ç, y, g) push it down
+  const hang = ctx.measureText(words[words.length - 1]).actualBoundingBoxDescent;
   ctx.fillStyle = fg;
   ctx.font = text(40);
-  const reason = W.persona.reason[0].toUpperCase() + W.persona.reason.slice(1) + ".";
   let line = "";
-  y += 78;
-  for (const word of reason.split(" ")) {
+  y += 78 + Math.max(0, hang - 6);
+  for (const word of p.reason.split(" ")) {
     if (line && ctx.measureText(line + " " + word).width > WIDTH - 2 * M) {
       ctx.fillText(line, M, y);
       y += 50;
@@ -442,25 +521,18 @@ async function drawCard() {
   ctx.fillText(line, M, y);
 
   // stats grid
-  const stats = [
-    [fmt(hoursTotal), "hours"],
-    [fmt(t.prompts), "prompts"],
-    [compact(t.toolCalls), "tool calls"],
-    [compact(t.tokens), "tokens"],
-    [compact(t.linesAdded), "lines written"],
-    [String(W.longestStreak), "day streak"],
-  ];
+  const values = [fmt(hoursTotal), fmt(t.prompts), compact(t.toolCalls), compact(t.tokens), compact(t.linesAdded), String(W.longestStreak)];
   const top = y + 64;
   const cellW = (WIDTH - 2 * M) / 3;
-  stats.forEach(([value, label], i) => {
+  values.forEach((value, i) => {
     const x = M + (i % 3) * cellW;
     const cy = top + Math.floor(i / 3) * 190;
     ctx.fillStyle = fg;
     ctx.font = cond(118);
-    ctx.fillText(value, x - 3, cy + 96);
+    ctx.fillText(value, x - 3, cy + 96, cellW - 16);
     ctx.font = text(30);
     ctx.globalAlpha = 0.8;
-    ctx.fillText(label, x, cy + 148);
+    ctx.fillText(s.stats[i], x, cy + 148, cellW - 16);
     ctx.globalAlpha = 1;
   });
 
@@ -477,11 +549,11 @@ async function drawCard() {
 
   ctx.fillStyle = fg;
   ctx.font = text(34, 700);
-  ctx.fillText("npx agent-wrapped", M, HEIGHT - 58);
+  ctx.fillText("npx vibe-wrapped", M, HEIGHT - 58);
   ctx.textAlign = "right";
   ctx.globalAlpha = 0.75;
   ctx.font = text(30);
-  ctx.fillText("made on my own machine", WIDTH - M, HEIGHT - 58);
+  ctx.fillText(s.footer, WIDTH - M, HEIGHT - 58);
   ctx.globalAlpha = 1;
 }
 
@@ -492,30 +564,35 @@ const flash = (button, message) => {
   setTimeout(() => (button.textContent = original), 1800);
 };
 
-document.getElementById("download").onclick = async (e) => {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(await blob());
-  a.download = `agent-wrapped-${W.label.replace(/\s+/g, "-")}.png`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  flash(e.currentTarget, "Downloaded");
-};
-document.getElementById("copy").onclick = async (e) => {
-  const button = e.currentTarget;
-  try {
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob() })]);
-    flash(button, "Copied");
-  } catch {
-    flash(button, "Copy failed, use Download");
-  }
-};
-document.getElementById("post").onclick = () => {
-  const message = `My ${isYear ? W.label : "time"} with coding agents: ${W.persona.title}.\n\n${fmt(hoursTotal)} hours, ${fmt(t.prompts)} prompts, ${compact(t.tokens)} tokens.\n\nGet yours: npx agent-wrapped`;
-  open("https://x.com/intent/post?text=" + encodeURIComponent(message), "_blank", "noopener");
-};
-document.getElementById("again").onclick = () => go(0);
+function bindShare() {
+  document.getElementById("download").onclick = async (e) => {
+    const button = e.currentTarget;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(await blob());
+    a.download = `vibe-wrapped-${W.label.replace(/\s+/g, "-")}.png`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash(button, L().share.downloaded);
+  };
+  document.getElementById("copy").onclick = async (e) => {
+    const button = e.currentTarget;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob() })]);
+      flash(button, L().share.copied);
+    } catch {
+      flash(button, L().share.copyFailed);
+    }
+  };
+  document.getElementById("post").onclick = () => {
+    const message = L().post(fmt(hoursTotal), fmt(t.prompts), compact(t.tokens));
+    open("https://x.com/intent/post?text=" + encodeURIComponent(message), "_blank", "noopener");
+  };
+  document.getElementById("again").onclick = () => go(0);
+}
 
-document.fonts.ready.then(() => go(0));
+render();
+// Load both font files (basic latin and the one with ğ, ş, İ) before the first measurement.
+document.fonts.load("900 100px Archivo", "AaİığĞşŞ").then(() => document.fonts.ready).then(() => go(0));
 </script>
 </body>
 </html>

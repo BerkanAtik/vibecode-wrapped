@@ -1,9 +1,11 @@
-# agent-wrapped
+# vibe-wrapped
+
+**English** · [Türkçe](README.tr.md)
 
 Your year with AI coding agents, wrapped. One command reads the Claude Code and Codex logs already on your computer and turns them into a set of cards and a shareable image.
 
 ```bash
-npx agent-wrapped
+npx vibe-wrapped
 ```
 
 <p>
@@ -13,7 +15,7 @@ npx agent-wrapped
   <img src="docs/card-persona.png" width="24%" alt="Card: your coding persona">
 </p>
 
-The screenshots use sample data. Run `npx agent-wrapped --demo` to see the same cards without any logs.
+The screenshots use sample data. Run `npx vibe-wrapped --demo` to see the same cards without any logs.
 
 ## What you get
 
@@ -24,6 +26,7 @@ The screenshots use sample data. Run `npx agent-wrapped --demo` to see the same 
 - Lines written and deleted, by file type
 - A persona picked from your habits: Night Owl, Early Bird, Weekend Warrior, Marathoner, Streaker, Orchestrator, Terminal Native, Refactorer or Builder
 - A 1080×1350 image to download, copy or post
+- English and Turkish, picked from your system language, with a switch on every card
 
 <img src="docs/share-card.png" width="320" alt="The shareable summary image">
 
@@ -45,6 +48,7 @@ Everything runs on your machine.
 | `--demo` | Show the cards with made-up sample data. |
 | `--text` | Print a text summary in the terminal instead of opening the cards. |
 | `--json` | Print the stats as JSON. |
+| `--lang <en\|tr>` | Language for the cards and the text. Defaults to your system language. |
 | `--no-open` | Start the local page without opening a browser. |
 | `--show-names` | Include file and project names in `--text` and `--json` output. |
 
@@ -69,8 +73,8 @@ The wrap covers what is still on disk. Claude Code removes old transcripts after
 ## Development
 
 ```bash
-git clone https://github.com/BerkanAtik/agent-wrapped
-cd agent-wrapped
+git clone https://github.com/BerkanAtik/vibe-wrapped
+cd vibe-wrapped
 npm install
 npm run build
 npm test

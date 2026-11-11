@@ -1,10 +1,10 @@
 {
-  "name": "agent-wrapped",
+  "name": "vibe-wrapped",
   "version": "0.1.0",
   "description": "Your year with AI coding agents, wrapped. Spotify Wrapped-style recap for Claude Code and Codex. 100% local.",
   "type": "module",
   "bin": {
-    "agent-wrapped": "dist/cli.js"
+    "vibe-wrapped": "dist/cli.js"
   },
   "files": [
     "dist"
@@ -30,9 +30,9 @@
   ],
   "license": "MIT",
   "author": "BerkanAtik",
-  "repository": { "type": "git", "url": "git+https://github.com/BerkanAtik/agent-wrapped.git" },
-  "homepage": "https://github.com/BerkanAtik/agent-wrapped#readme",
-  "bugs": "https://github.com/BerkanAtik/agent-wrapped/issues",
+  "repository": { "type": "git", "url": "git+https://github.com/BerkanAtik/vibe-wrapped.git" },
+  "homepage": "https://github.com/BerkanAtik/vibe-wrapped#readme",
+  "bugs": "https://github.com/BerkanAtik/vibe-wrapped/issues",
   "devDependencies": {
     "@fontsource-variable/archivo": "^5.3.0",
     "@types/node": "^22.0.0",

@@ -1,22 +1,27 @@
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
+import type { Lang } from "./i18n.js";
 import type { Wrapped } from "./stats.js";
 
 const UI = new URL("./ui/", import.meta.url);
 
 /** Serves the cards on localhost only and opens the browser. Resolves with the URL; runs until Ctrl+C. */
-export async function serve(wrapped: Wrapped, open: boolean): Promise<string> {
+export async function serve(wrapped: Wrapped, lang: Lang, open: boolean): Promise<string> {
   const data = JSON.stringify(wrapped).replace(/</g, "\\u003c");
-  const html = (await readFile(new URL("index.html", UI), "utf8")).replace("/*DATA*/null", () => data);
-  const font = await readFile(new URL("archivo.woff2", UI));
+  const html = (await readFile(new URL("index.html", UI), "utf8"))
+    .replace("/*DATA*/null", () => data)
+    .replace('/*LANG*/"en"', JSON.stringify(lang));
+  const fonts = new Map<string, Buffer>();
+  for (const name of ["archivo.woff2", "archivo-ext.woff2"]) fonts.set("/" + name, await readFile(new URL(name, UI)));
 
   const server = createServer((req, res) => {
     const path = (req.url ?? "/").split("?")[0];
+    const font = fonts.get(path);
     if (path === "/") {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
       res.end(html);
-    } else if (path === "/archivo.woff2") {
+    } else if (font) {
       res.writeHead(200, { "content-type": "font/woff2" });
       res.end(font);
     } else {
