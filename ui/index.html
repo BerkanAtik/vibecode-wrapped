@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vibe Wrapped</title>
+<title>Vibecode Wrapped</title>
 <link rel="icon" href="data:,">
 <style>
 @font-face {
@@ -228,12 +228,12 @@ const TEXT = {
     hoursAria: "Activity by hour of day",
     calAria: "Active days calendar",
     days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-    share: { aria: "Share your card", image: "Your Vibe Wrapped card", download: "Download image", copy: "Copy image", post: "Post on X", again: "Watch again",
+    share: { aria: "Share your card", image: "Your Vibecode Wrapped card", download: "Download image", copy: "Copy image", post: "Post on X", again: "Watch again",
       note: "The image has totals only: no file names, project names or prompts.", downloaded: "Downloaded", copied: "Copied", copyFailed: "Copy failed, use Download",
       stats: ["hours", "prompts", "tool calls", "tokens", "lines written", "day streak"], footer: "made on my own machine" },
-    post: (h, p, k) => `My ${isYear ? W.label : "time"} with coding agents: ${persona().full}.\n\n${h} hours, ${p} prompts, ${k} tokens.\n\nGet yours: npx vibe-wrapped`,
+    post: (h, p, k) => `My ${isYear ? W.label : "time"} with coding agents: ${persona().full}.\n\n${h} hours, ${p} prompts, ${k} tokens.\n\nGet yours: npx vibecode-wrapped`,
     slides: (a) => [
-      { lead: "Vibe Wrapped", big: isYear ? W.label : "All time",
+      { lead: "Vibecode Wrapped", big: isYear ? W.label : "All time",
         after: `Your ${isYear ? "year" : "time"} with ${a}, read from the logs on this computer.`,
         note: "Nothing was uploaded. This page is served from your own machine." },
       { lead: "You spent",
@@ -263,12 +263,12 @@ const TEXT = {
     hoursAria: "Günün saatlerine göre etkinlik",
     calAria: "Aktif günler takvimi",
     days: ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"],
-    share: { aria: "Kartını paylaş", image: "Vibe Wrapped kartın", download: "Görseli indir", copy: "Görseli kopyala", post: "X'te paylaş", again: "Baştan izle",
+    share: { aria: "Kartını paylaş", image: "Vibecode Wrapped kartın", download: "Görseli indir", copy: "Görseli kopyala", post: "X'te paylaş", again: "Baştan izle",
       note: "Görselde yalnız toplamlar var; dosya adı, proje adı ya da prompt yok.", downloaded: "İndirildi", copied: "Kopyalandı", copyFailed: "Kopyalanamadı, indirmeyi dene",
       stats: ["saat", "prompt", "araç çağrısı", "token", "satır kod", "günlük seri"], footer: "kendi bilgisayarımda üretildi" },
-    post: (h, p, k) => `Kodlama ajanlarıyla ${isYear ? W.label + " yılım" : "tüm zamanlarım"}: ${persona().full}.\n\n${h} saat, ${p} prompt, ${k} token.\n\nSeninkini gör: npx vibe-wrapped`,
+    post: (h, p, k) => `Kodlama ajanlarıyla ${isYear ? W.label + " yılım" : "tüm zamanlarım"}: ${persona().full}.\n\n${h} saat, ${p} prompt, ${k} token.\n\nSeninkini gör: npx vibecode-wrapped`,
     slides: (a) => [
-      { lead: "Vibe Wrapped", big: isYear ? W.label : "Tüm zamanlar",
+      { lead: "Vibecode Wrapped", big: isYear ? W.label : "Tüm zamanlar",
         after: `${a} ile geçen ${isYear ? "yılın" : "zamanın"}, bu bilgisayardaki kayıtlardan okundu.`,
         note: "Hiçbir şey yüklenmedi. Bu sayfa kendi bilgisayarından açılıyor." },
       { lead: "Ajanlarla kod yazarak geçirdiğin süre",
@@ -484,7 +484,7 @@ async function drawCard() {
   ctx.fillStyle = fg;
   ctx.font = text(38, 700);
   ctx.textAlign = "left";
-  ctx.fillText(`Vibe Wrapped ${isYear ? W.label : ""}`.trim(), M, 112);
+  ctx.fillText(`Vibecode Wrapped ${isYear ? W.label : ""}`.trim(), M, 112);
   ctx.textAlign = "right";
   ctx.globalAlpha = 0.75;
   ctx.fillText(L().agents.replace(/ (and|ve) /, " + "), WIDTH - M, 112);
@@ -549,7 +549,7 @@ async function drawCard() {
 
   ctx.fillStyle = fg;
   ctx.font = text(34, 700);
-  ctx.fillText("npx vibe-wrapped", M, HEIGHT - 58);
+  ctx.fillText("npx vibecode-wrapped", M, HEIGHT - 58);
   ctx.textAlign = "right";
   ctx.globalAlpha = 0.75;
   ctx.font = text(30);
@@ -569,7 +569,7 @@ function bindShare() {
     const button = e.currentTarget;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(await blob());
-    a.download = `vibe-wrapped-${W.label.replace(/\s+/g, "-")}.png`;
+    a.download = `vibecode-wrapped-${W.label.replace(/\s+/g, "-")}.png`;
     a.click();
     URL.revokeObjectURL(a.href);
     flash(button, L().share.downloaded);

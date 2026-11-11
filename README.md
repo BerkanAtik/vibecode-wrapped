@@ -1,11 +1,11 @@
-# vibe-wrapped
+# vibecode-wrapped
 
 **English** · [Türkçe](README.tr.md)
 
 Your year with AI coding agents, wrapped. One command reads the Claude Code and Codex logs already on your computer and turns them into a set of cards and a shareable image.
 
 ```bash
-npx vibe-wrapped
+npx vibecode-wrapped
 ```
 
 <p>
@@ -15,7 +15,7 @@ npx vibe-wrapped
   <img src="docs/card-persona.png" width="24%" alt="Card: your coding persona">
 </p>
 
-The screenshots use sample data. Run `npx vibe-wrapped --demo` to see the same cards without any logs.
+The screenshots use sample data. Run `npx vibecode-wrapped --demo` to see the same cards without any logs.
 
 ## What you get
 
@@ -73,8 +73,8 @@ The wrap covers what is still on disk. Claude Code removes old transcripts after
 ## Development
 
 ```bash
-git clone https://github.com/BerkanAtik/vibe-wrapped
-cd vibe-wrapped
+git clone https://github.com/BerkanAtik/vibecode-wrapped
+cd vibecode-wrapped
 npm install
 npm run build
 npm test

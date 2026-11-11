@@ -56,9 +56,9 @@ export function personaText(id: string, value: number, lang: Lang): PersonaText 
 
 export const MESSAGES = {
   en: {
-    help: `vibe-wrapped - your year with AI coding agents, wrapped
+    help: `vibecode-wrapped - your year with AI coding agents, wrapped
 
-Usage: npx vibe-wrapped [options]
+Usage: npx vibecode-wrapped [options]
 
   --year <yyyy>   Year to wrap (default: current year)
   --all           All time instead of one year
@@ -79,8 +79,8 @@ Everything runs locally. Nothing leaves your machine.`,
     noActivity: (period: string) => `No activity found for ${period}. Try --all or --year <yyyy>.`,
     anyYear: "any year",
     allTime: "all time",
-    ready: (url: string) => `Your Vibe Wrapped is ready: ${url}\n  Served from this machine only. Press Ctrl+C to stop.`,
-    failed: (m: string) => `vibe-wrapped failed: ${m}`,
+    ready: (url: string) => `Your Vibecode Wrapped is ready: ${url}\n  Served from this machine only. Press Ctrl+C to stop.`,
+    failed: (m: string) => `vibecode-wrapped failed: ${m}`,
     summary: {
       time: "Time coding",
       hoursAcross: (h: string, d: string) => `${h} hours across ${d} days`,
@@ -104,9 +104,9 @@ Everything runs locally. Nothing leaves your machine.`,
     },
   },
   tr: {
-    help: `vibe-wrapped - yapay zekâ kodlama ajanlarıyla geçen yılının özeti
+    help: `vibecode-wrapped - yapay zekâ kodlama ajanlarıyla geçen yılının özeti
 
-Kullanım: npx vibe-wrapped [seçenekler]
+Kullanım: npx vibecode-wrapped [seçenekler]
 
   --year <yyyy>   Özetlenecek yıl (varsayılan: bu yıl)
   --all           Tek bir yıl yerine tüm zamanlar
@@ -127,8 +127,8 @@ Her şey bilgisayarında çalışır. Hiçbir veri dışarı çıkmaz.`,
     noActivity: (period: string) => `${period} için etkinlik bulunamadı. --all ya da --year <yyyy> dene.`,
     anyYear: "Hiçbir yıl",
     allTime: "tüm zamanlar",
-    ready: (url: string) => `Vibe Wrapped hazır: ${url}\n  Yalnız bu bilgisayardan sunuluyor. Durdurmak için Ctrl+C'ye bas.`,
-    failed: (m: string) => `vibe-wrapped çalışamadı: ${m}`,
+    ready: (url: string) => `Vibecode Wrapped hazır: ${url}\n  Yalnız bu bilgisayardan sunuluyor. Durdurmak için Ctrl+C'ye bas.`,
+    failed: (m: string) => `vibecode-wrapped çalışamadı: ${m}`,
     summary: {
       time: "Kodlama süresi",
       hoursAcross: (h: string, d: string) => `${h} saat, ${d} güne yayıldı`,

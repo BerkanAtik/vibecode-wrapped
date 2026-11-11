@@ -1,11 +1,11 @@
-# vibe-wrapped
+# vibecode-wrapped
 
 [English](README.md) · **Türkçe**
 
 Yapay zekâ kodlama ajanlarıyla geçen yılının özeti. Tek bir komut, bilgisayarındaki Claude Code ve Codex kayıtlarını okur; bunları bir dizi karta ve paylaşılabilir bir görsele dönüştürür.
 
 ```bash
-npx vibe-wrapped
+npx vibecode-wrapped
 ```
 
 <p>
@@ -15,7 +15,7 @@ npx vibe-wrapped
   <img src="docs/card-persona.png" width="24%" alt="Kart: kodlama kişiliğin">
 </p>
 
-Ekran görüntüleri örnek veriyle hazırlandı. Kayıt olmadan aynı kartları görmek için `npx vibe-wrapped --demo` çalıştır.
+Ekran görüntüleri örnek veriyle hazırlandı. Kayıt olmadan aynı kartları görmek için `npx vibecode-wrapped --demo` çalıştır.
 
 ## Neler var
 
@@ -73,8 +73,8 @@ Node.js 18 ya da daha yenisi gerekir.
 ## Geliştirme
 
 ```bash
-git clone https://github.com/BerkanAtik/vibe-wrapped
-cd vibe-wrapped
+git clone https://github.com/BerkanAtik/vibecode-wrapped
+cd vibecode-wrapped
 npm install
 npm run build
 npm test

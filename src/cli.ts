@@ -86,7 +86,7 @@ function printSummary(w: Wrapped, showNames: boolean) {
   const label = /^\d{4}$/.test(w.label) ? w.label : msg().allTime;
   const p = w.persona.text[lang];
   console.log(
-    ["", `  Vibe Wrapped ${label}`, `  ${p.title}: ${p.reason}`, "", ...rows.map(([k, v]) => `  ${k.padEnd(width)}${v}`)].join("\n") + "\n",
+    ["", `  Vibecode Wrapped ${label}`, `  ${p.title}: ${p.reason}`, "", ...rows.map(([k, v]) => `  ${k.padEnd(width)}${v}`)].join("\n") + "\n",
   );
 }
 
